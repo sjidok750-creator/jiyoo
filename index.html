@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>지유의 별빛 정원</title>
+<meta name="theme-color" content="#160f33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="지유의 정원">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background: linear-gradient(180deg, #0d0a26 0%, #1a1440 45%, #2d1b69 100%);
+    color: #fdf6ff;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* ---------- 별이 반짝이는 배경 ---------- */
+  #starfield { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .bg-star {
+    position: absolute; border-radius: 50%;
+    background: #fff;
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .15; transform: scale(1); }
+    50% { opacity: .9; transform: scale(1.4); }
+  }
+
+  /* ---------- 화면 공통 ---------- */
+  .screen {
+    position: fixed; inset: 0; z-index: 1;
+    display: none; flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen.active { display: flex; }
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; z-index: 5;
+  }
+  .topbar h2 { font-size: 19px; font-weight: 700; flex: 1; text-shadow: 0 0 12px rgba(255,180,255,.5); }
+  .btn {
+    border: none; cursor: pointer;
+    background: rgba(255,255,255,.12);
+    color: #fdf6ff; font-family: inherit;
+    border-radius: 999px; padding: 9px 16px;
+    font-size: 15px; font-weight: 600;
+    backdrop-filter: blur(6px);
+    transition: transform .25s ease, background .25s ease;
+  }
+  .btn:active { transform: scale(.93); background: rgba(255,255,255,.22); }
+  .btn.round { width: 42px; height: 42px; padding: 0; font-size: 19px; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ---------- 홈 화면 ---------- */
+  #home { align-items: center; overflow-y: auto; }
+  .home-head { text-align: center; padding: 42px 20px 8px; }
+  .home-head .moon { font-size: 44px; display: block; animation: floaty 5s ease-in-out infinite; }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .home-head h1 {
+    font-size: 30px; font-weight: 800; margin-top: 8px; letter-spacing: 1px;
+    background: linear-gradient(90deg, #ffd6f2, #c9b8ff, #a8f0e8, #ffe9a8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shimmer 8s linear infinite; background-size: 300% 100%;
+  }
+  @keyframes shimmer { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+  .home-head p { margin-top: 10px; font-size: 14px; color: #cfc3f5; line-height: 1.7; }
+  .home-head p strong { color: #ffd6f2; }
+
+  .cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; padding: 22px 20px; width: 100%; max-width: 460px;
+  }
+  .card {
+    border: none; cursor: pointer; font-family: inherit; color: #fff;
+    border-radius: 24px; padding: 20px 12px 18px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
+    transition: transform .25s ease;
+  }
+  .card:active { transform: scale(.95); }
+  .card .ico { font-size: 38px; display: block; }
+  .card .nm { display: block; margin-top: 10px; font-size: 16px; font-weight: 700; }
+  .card .ds { display: block; margin-top: 5px; font-size: 12px; opacity: .85; line-height: 1.5; }
+  .card.c1 { background: linear-gradient(135deg, #ff8fc7, #b06ee8); }
+  .card.c2 { background: linear-gradient(135deg, #6ec3f0, #7a6ee8); }
+  .card.c3 { background: linear-gradient(135deg, #57ceaa, #3f8fd8); }
+  .card.c4 { background: linear-gradient(135deg, #f5a860, #e8608a); }
+  .card.c5 { background: linear-gradient(135deg, #c9b8ff, #8a6ee8); grid-column: 1 / -1; }
+
+  .home-foot { padding: 4px 24px 36px; text-align: center; font-size: 12.5px; color: #a99ae0; line-height: 1.8; }
+
+  /* ---------- 첫 선물 오버레이 ---------- */
+  #gift {
+    position: fixed; inset: 0; z-index: 50;
+    background: linear-gradient(180deg, #0d0a26, #241454);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 32px;
+  }
+  #gift.active { display: flex; }
+  #gift .big { font-size: 70px; animation: floaty 4s ease-in-out infinite; }
+  #gift h1 { font-size: 26px; margin-top: 18px; color: #ffd6f2; }
+  #gift p { margin-top: 16px; font-size: 15.5px; line-height: 2; color: #e8ddff; max-width: 320px; }
+  #gift .btn { margin-top: 30px; font-size: 17px; padding: 14px 34px; background: linear-gradient(135deg, #ff8fc7, #b06ee8); box-shadow: 0 6px 20px rgba(255,143,199,.4); }
+
+  /* ---------- 그림판 ---------- */
+  #draw .stage, #bubbles .stage { position: relative; flex: 1; }
+  canvas.full { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+  .toolrow { display: flex; gap: 8px; justify-content: center; padding: 10px 12px 18px; flex-wrap: wrap; }
+
+  /* ---------- 숨결 별 ---------- */
+  #breath .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+  #breathCircle {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffe9a8, #ff8fc7 55%, #b06ee8);
+    box-shadow: 0 0 60px 12px rgba(255,143,199,.45);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px;
+    transform: scale(.75);
+  }
+  #breathText { font-size: 21px; font-weight: 700; color: #ffe9d6; min-height: 30px; text-shadow: 0 0 14px rgba(255,200,150,.5); }
+  #breathStars { min-height: 34px; font-size: 24px; letter-spacing: 6px; }
+  #breathStars span { display: inline-block; animation: bloomIn .9s ease both; }
+  @keyframes bloomIn { from { transform: scale(0) rotate(-90deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+  /* ---------- 정원 ---------- */
+  #garden .stage {
+    position: relative; flex: 1; overflow: hidden;
+    background: linear-gradient(180deg, transparent 55%, rgba(46,84,58,.55) 78%, rgba(38,74,50,.8) 100%);
+    touch-action: none;
+  }
+  .flower {
+    position: absolute; transform: translate(-50%, -80%);
+    font-size: 34px; animation: grow .9s cubic-bezier(.2,1.4,.4,1) both;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,.25));
+  }
+  @keyframes grow { from { transform: translate(-50%,-80%) scale(0); } to { transform: translate(-50%,-80%) scale(1); } }
+  .flower.watered { animation: sway 1.6s ease-in-out 2; }
+  @keyframes sway { 0%,100% { transform: translate(-50%,-80%) rotate(0); } 25% { transform: translate(-50%,-80%) rotate(-10deg); } 75% { transform: translate(-50%,-80%) rotate(10deg); } }
+  #butterfly { position: absolute; font-size: 26px; transition: transform .2s linear; pointer-events: none; z-index: 3; }
+  .garden-hint { position: absolute; top: 12px; left: 0; right: 0; text-align: center; font-size: 13.5px; color: #d6f5e0; text-shadow: 0 1px 4px rgba(0,0,0,.5); pointer-events: none; }
+
+  /* ---------- 우체통 ---------- */
+  #mail .stage { flex: 1; overflow-y: auto; padding: 8px 22px 30px; display: flex; flex-direction: column; align-items: center; }
+  .letter {
+    width: 100%; max-width: 420px;
+    background: linear-gradient(160deg, #fff8ee, #ffeef8);
+    color: #4a3557; border-radius: 22px;
+    padding: 26px 24px; margin-top: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    animation: letterIn .7s cubic-bezier(.2,1.2,.4,1) both;
+  }
+  @keyframes letterIn { from { transform: translateY(24px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .letter .stamp { font-size: 30px; }
+  .letter h3 { margin-top: 10px; font-size: 17px; color: #b0508a; }
+  .letter p { margin-top: 14px; font-size: 15.5px; line-height: 2.05; white-space: pre-line; }
+  .letter .from { margin-top: 18px; text-align: right; font-size: 14px; color: #8a6aa0; font-weight: 700; }
+  .mail-nav { display: flex; gap: 10px; margin-top: 18px; }
+  .mail-note { margin-top: 16px; font-size: 12.5px; color: #b8a8e8; text-align: center; line-height: 1.8; }
+
+  /* 팝 파티클(공용) */
+  .spark {
+    position: fixed; pointer-events: none; z-index: 40; font-size: 18px;
+    animation: sparkFly 1s ease-out forwards;
+  }
+  @keyframes sparkFly {
+    from { transform: translate(0,0) scale(1); opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="starfield"></div>
+
+<!-- 첫 실행 선물 오버레이 -->
+<div id="gift">
+  <div class="big">🎁</div>
+  <h1>지유에게 도착한 선물</h1>
+  <p id="giftMsg"></p>
+  <button class="btn" id="giftOpen">선물 열기 ✨</button>
+</div>
+
+<!-- 홈 -->
+<main id="home" class="screen active">
+  <div class="home-head">
+    <span class="moon">🌙</span>
+    <h1 id="appTitle"></h1>
+    <p id="appDedication"></p>
+  </div>
+  <div class="cards">
+    <button class="card c1" data-go="draw"><span class="ico">🎨</span><span class="nm">반짝 그림판</span><span class="ds">손끝에서 빛이<br>피어나요</span></button>
+    <button class="card c2" data-go="bubbles"><span class="ico">🫧</span><span class="nm">마음 방울</span><span class="ds">응원을 담은 방울을<br>톡톡 터뜨려요</span></button>
+    <button class="card c3" data-go="breath"><span class="ico">🌬️</span><span class="nm">숨결 별</span><span class="ds">별과 함께<br>천천히 숨쉬어요</span></button>
+    <button class="card c4" data-go="garden"><span class="ico">🌷</span><span class="nm">지유의 정원</span><span class="ds">매일 자라나는<br>나만의 꽃밭</span></button>
+    <button class="card c5" data-go="mail"><span class="ico">💌</span><span class="nm">별빛 우체통</span><span class="ds">매일 한 통씩, 지유에게 온 편지</span></button>
+  </div>
+  <div class="home-foot">
+    <button class="btn" id="soundToggle">🔔 소리 켜짐</button>
+    <p style="margin-top:14px" id="footNote"></p>
+  </div>
+</main>
+
+<!-- 반짝 그림판 -->
+<section id="draw" class="screen">
+  <div class="topbar">
+    <button class="btn round" data-go="home">←</button>
+    <h2>🎨 반짝 그림판</h2>
+    <button class="btn" id="symBtn">🪞 대칭 6</button>
+  </div>
+  <div class="stage">
+    <canvas id="paint" class="full"></canvas>
+    <canvas id="paintFx" class="full" style="pointer-events:none"></canvas>
+  </div>
+  <div class="toolrow">
+    <button class="btn" id="clearPaint">🌫️ 스르륵 지우기</button>
+    <button class="btn" id="savePaint">📸 작품 저장</button>
+  </div>
+</section>
+
+<!-- 마음 방울 -->
+<section id="bubbles" class="screen">
+  <div class="topbar">
+    <button class="btn round" data-go="home">←</button>
+    <h2>🫧 마음 방울</h2>
+  </div>
+  <div class="stage">
+    <canvas id="bubbleCv" class="full"></canvas>
+  </div>
+</section>
+
+<!-- 숨결 별 -->
+<section id="breath" class="screen">
+  <div class="topbar">
+    <button class="btn round" data-go="home">←</button>
+    <h2>🌬️ 숨결 별</h2>
+  </div>
+  <div class="stage">
+    <div id="breathText">준비되면 시작을 눌러요</div>
+    <div id="breathCircle">⭐</div>
+    <div id="breathStars"></div>
+    <button class="btn" id="breathBtn" style="font-size:16px; padding:12px 28px">시작하기</button>
+  </div>
+</section>
+
+<!-- 지유의 정원 -->
+<section id="garden" class="screen">
+  <div class="topbar">
+    <button class="btn round" data-go="home">←</button>
+    <h2>🌷 지유의 정원</h2>
+    <button class="btn" id="waterBtn">💧 물 주기</button>
+  </div>
+  <div class="stage" id="gardenStage">
+    <div class="garden-hint" id="gardenHint"></div>
+    <div id="butterfly">🦋</div>
+  </div>
+</section>
+
+<!-- 별빛 우체통 -->
+<section id="mail" class="screen">
+  <div class="topbar">
+    <button class="btn round" data-go="home">←</button>
+    <h2>💌 별빛 우체통</h2>
+  </div>
+  <div class="stage">
+    <div class="letter" id="letterCard"></div>
+    <div class="mail-nav">
+      <button class="btn" id="prevLetter">← 지난 편지</button>
+      <button class="btn" id="nextLetter">다음 편지 →</button>
+    </div>
+    <p class="mail-note">편지는 매일 한 통씩 새로 도착해요.<br>인터넷이 없어도, 어느 나라에 있어도 열 수 있어요. 🌏</p>
+  </div>
+</section>
+
+<script>
+/* ==========================================================
+   ✏️ 여기만 고치면 나만의 선물이 됩니다
+   ========================================================== */
+const CONFIG = {
+  childName: "지유",           // 아이 이름
+  fullName: "홍지유",          // 아이 전체 이름
+  sender: "지유를 세상에서 제일 아끼는 사람",  // 편지 보내는 사람 (예: "사랑하는 이모가", "삼촌이")
+  dedication: "이 앱은 세상에 딱 하나뿐이에요.\n오직 <strong>홍지유</strong>, 너를 위해서만 만들어졌어요.",
+  giftMessage: "지유야, 안녕!\n너를 생각하면서 아주 오래오래 만든 선물이야.\n이 안의 모든 별과 꽃과 편지는\n전부 너 하나만을 위한 거야.",
+  // 💌 편지들 — 자유롭게 고치고, 추가하세요. 매일 순서대로 한 통씩 도착합니다.
+  letters: [
+    { title: "첫 번째 편지", body: "지유야, 이 앱을 열어줘서 고마워.\n\n여기 있는 그림판도, 방울도, 정원도 전부 너만의 것이야. 세상 어느 앱가게에서도 팔지 않아. 딱 한 사람, 홍지유만 가질 수 있는 앱이거든.\n\n심심할 때, 마음이 간질간질할 때, 언제든 놀러 와. 그리고 가끔은 나를 떠올려 줘." },
+    { title: "반짝이는 너에게", body: "지유가 웃으면 주변이 환해지는 거 알아?\n\n오늘도 그 웃음 한 번만 보여줘. 거울 보고 씨익, 그거면 충분해." },
+    { title: "괜찮아, 다 괜찮아", body: "몸이 가끔 네 마음이랑 다르게 움찔거려도 괜찮아.\n\n그것도 지유의 일부이고, 나는 지유의 전부를 사랑해. 하나도 빠짐없이, 전부 다." },
+    { title: "멀리 있어도", body: "우리가 아주 멀리 떨어져 있어도, 밤하늘은 하나로 이어져 있대.\n\n네가 보는 달을 나도 보고 있어. 그러니까 우리는 매일 밤 만나는 거야." },
+    { title: "천천히 해도 돼", body: "빨리 하지 않아도 돼. 잘하지 않아도 돼.\n\n지유가 지유답게 있는 것, 그게 세상에서 제일 멋진 일이야." },
+    { title: "오늘의 주문", body: "따라 해 봐. \"나는 홍지유다. 나는 반짝인다.\"\n\n세 번 말하면 진짜로 반짝여져. 내가 마법을 걸어놨거든. ✨" },
+    { title: "보고 싶은 날에는", body: "내가 보고 싶은 날에는 정원에 꽃을 하나 심어 줘.\n\n네가 심은 꽃 하나하나가 나한테 보내는 편지라고 생각할게." },
+    { title: "새로운 곳에서", body: "낯선 곳, 낯선 말, 낯선 친구들... 처음엔 다 어색할 거야.\n\n그런데 지유야, 너는 이미 낯선 걸 즐거운 걸로 바꾸는 재주가 있어. 천천히, 너의 속도로 하면 돼." },
+    { title: "숨 한 번", body: "마음이 콩닥콩닥 바쁠 때는 '숨결 별'에 가 봐.\n\n별이랑 같이 숨을 쉬다 보면, 마음이 밤바다처럼 잔잔해질 거야." },
+    { title: "너는 나의 자랑", body: "누가 나한테 세상에서 제일 자랑하고 싶은 게 뭐냐고 물으면, 나는 일 초도 고민 안 하고 대답해.\n\n\"홍지유요.\"" },
+    { title: "그림 한 장", body: "오늘은 반짝 그림판에 아무거나 그려 봐. 잘 그릴 필요 없어.\n\n손가락 가는 대로 그리면, 빛이 알아서 예쁘게 만들어 줄 거야. 너의 손은 원래 마법 손이니까." },
+    { title: "언제나 네 편", body: "기쁜 일이 있으면 제일 먼저 자랑해 줘.\n속상한 일이 있어도 제일 먼저 말해 줘.\n\n나는 지구 반대편에 있어도, 언제나 지유 편이야." },
+  ],
+};
+/* ========================================================== */
+
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("jiyu_" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("jiyu_" + k, JSON.stringify(v)); } catch {} },
+};
+
+/* ---------- 문구 채우기 ---------- */
+$("#appTitle").textContent = CONFIG.childName + "의 별빛 정원";
+$("#appDedication").innerHTML = CONFIG.dedication.replace(/\n/g, "<br>");
+$("#giftMsg").textContent = CONFIG.giftMessage;
+$("#footNote").textContent = "여기엔 점수도, 시간제한도, 지는 것도 없어요. " + CONFIG.childName + "가 편안하게 놀다 가면 그걸로 충분해요.";
+
+/* ---------- 배경 별 ---------- */
+(function makeStars() {
+  const field = $("#starfield");
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement("div");
+    s.className = "bg-star";
+    const size = 1 + Math.random() * 2.5;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${Math.random() * 4}s;animation-duration:${3 + Math.random() * 4}s`;
+    field.appendChild(s);
+  }
+})();
+
+/* ---------- 부드러운 소리 (외부 파일 없이) ---------- */
+let audioCtx = null;
+let soundOn = store.get("sound", true);
+function updateSoundBtn() { $("#soundToggle").textContent = soundOn ? "🔔 소리 켜짐" : "🔕 소리 꺼짐"; }
+updateSoundBtn();
+$("#soundToggle").addEventListener("click", () => { soundOn = !soundOn; store.set("sound", soundOn); updateSoundBtn(); chime(660); });
+function chime(freq = 523, dur = 0.5, type = "sine", vol = 0.12) {
+  if (!soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch {}
+}
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880.0]; // 어떤 순서로 울려도 어울리는 5음계
+const softNote = () => chime(PENTA[Math.floor(Math.random() * PENTA.length)], 0.6);
+
+/* ---------- 반짝 파티클 (DOM) ---------- */
+function sparkBurst(x, y, n = 6) {
+  const glyphs = ["✨", "⭐", "💫", "🌟"];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement("div");
+    el.className = "spark";
+    el.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+    const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 60;
+    el.style.left = x + "px"; el.style.top = y + "px";
+    el.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+    el.style.setProperty("--dy", Math.sin(ang) * dist - 20 + "px");
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+}
+
+/* ---------- 화면 전환 ---------- */
+let current = "home";
+const enterHooks = {}, leaveHooks = {};
+function go(id) {
+  if (leaveHooks[current]) leaveHooks[current]();
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $("#" + id).classList.add("active");
+  current = id;
+  if (enterHooks[id]) enterHooks[id]();
+}
+document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => { softNote(); go(b.dataset.go); }));
+
+/* ---------- 첫 실행: 선물 열기 ---------- */
+if (!store.get("opened", false)) $("#gift").classList.add("active");
+$("#giftOpen").addEventListener("click", (e) => {
+  store.set("opened", true);
+  $("#gift").classList.remove("active");
+  sparkBurst(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2, 14);
+  chime(659, 0.8); setTimeout(() => chime(784, 0.8), 180); setTimeout(() => chime(1047, 1.1), 380);
+});
+
+/* ---------- 캔버스 리사이즈 공통 ---------- */
+function fitCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  return { w: r.width, h: r.height, dpr };
+}
+
+/* ==========================================================
+   🎨 반짝 그림판 — 만다라 대칭 + 빛나는 선
+   ========================================================== */
+(function drawPad() {
+  const paint = $("#paint"), fx = $("#paintFx");
+  const pctx = paint.getContext("2d"), fctx = fx.getContext("2d");
+  let sym = 6, hue = 300, drawing = false, last = null, raf = null;
+  const sparks = [];
+  const symModes = [6, 8, 12, 1];
+
+  $("#symBtn").addEventListener("click", () => {
+    sym = symModes[(symModes.indexOf(sym) + 1) % symModes.length];
+    $("#symBtn").textContent = sym === 1 ? "🪞 자유" : "🪞 대칭 " + sym;
+    softNote();
+  });
+
+  function pos(e) {
+    const r = paint.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+
+  function strokeSeg(a, b) {
+    const { w, h, dpr } = fitCanvas(paint);
+    const cx = w / 2, cy = h / 2;
+    pctx.save(); pctx.scale(dpr, dpr);
+    pctx.lineCap = "round"; pctx.lineWidth = 5;
+    pctx.shadowBlur = 14;
+    for (let i = 0; i < sym; i++) {
+      const ang = (i * Math.PI * 2) / sym;
+      const col = `hsl(${(hue + i * 12) % 360}, 95%, 72%)`;
+      pctx.strokeStyle = col; pctx.shadowColor = col;
+      for (const flip of sym === 1 ? [1] : [1, -1]) {
+        const p1 = rot(a, cx, cy, ang, flip), p2 = rot(b, cx, cy, ang, flip);
+        pctx.beginPath(); pctx.moveTo(p1.x, p1.y); pctx.lineTo(p2.x, p2.y); pctx.stroke();
+        if (Math.random() < 0.25) sparks.push({ x: p2.x, y: p2.y, life: 1, vx: (Math.random() - 0.5) * 0.8, vy: -0.4 - Math.random() * 0.6, hue });
+      }
+    }
+    pctx.restore();
+    hue = (hue + 1.5) % 360;
+  }
+  function rot(p, cx, cy, ang, flip) {
+    let dx = p.x - cx, dy = (p.y - cy) * flip;
+    return { x: cx + dx * Math.cos(ang) - dy * Math.sin(ang), y: cy + dx * Math.sin(ang) + dy * Math.cos(ang) };
+  }
+
+  function fxLoop() {
+    const { w, h, dpr } = fitCanvas(fx);
+    fctx.save(); fctx.scale(dpr, dpr); fctx.clearRect(0, 0, w, h);
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.x += s.vx; s.y += s.vy; s.life -= 0.02;
+      if (s.life <= 0) { sparks.splice(i, 1); continue; }
+      fctx.globalAlpha = s.life;
+      fctx.fillStyle = `hsl(${s.hue}, 100%, 85%)`;
+      fctx.beginPath(); fctx.arc(s.x, s.y, 1.6 + s.life * 1.6, 0, Math.PI * 2); fctx.fill();
+    }
+    fctx.restore();
+    raf = requestAnimationFrame(fxLoop);
+  }
+
+  paint.addEventListener("pointerdown", (e) => { drawing = true; last = pos(e); strokeSeg(last, last); if (Math.random() < 0.4) softNote(); });
+  paint.addEventListener("pointermove", (e) => { if (!drawing) return; const p = pos(e); strokeSeg(last, p); last = p; });
+  addEventListener("pointerup", () => { drawing = false; });
+
+  $("#clearPaint").addEventListener("click", () => {
+    chime(392, 0.9);
+    let step = 0;
+    const t = setInterval(() => {
+      const { w, h, dpr } = fitCanvas(paint);
+      pctx.save(); pctx.scale(dpr, dpr);
+      pctx.fillStyle = "rgba(20, 14, 50, 0.25)"; pctx.fillRect(0, 0, w, h);
+      pctx.restore();
+      if (++step > 14) { clearInterval(t); pctx.clearRect(0, 0, paint.width, paint.height); }
+    }, 60);
+  });
+
+  $("#savePaint").addEventListener("click", () => {
+    const out = document.createElement("canvas");
+    out.width = paint.width; out.height = paint.height;
+    const octx = out.getContext("2d");
+    const g = octx.createLinearGradient(0, 0, 0, out.height);
+    g.addColorStop(0, "#0d0a26"); g.addColorStop(1, "#2d1b69");
+    octx.fillStyle = g; octx.fillRect(0, 0, out.width, out.height);
+    octx.drawImage(paint, 0, 0);
+    const a = document.createElement("a");
+    a.download = CONFIG.fullName + "의 작품.png";
+    a.href = out.toDataURL("image/png");
+    a.click();
+    chime(880, 0.7); sparkBurst(innerWidth / 2, innerHeight - 80, 10);
+  });
+
+  enterHooks.draw = () => { fitCanvas(paint); fitCanvas(fx); raf = requestAnimationFrame(fxLoop); };
+  leaveHooks.draw = () => cancelAnimationFrame(raf);
+})();
+
+/* ==========================================================
+   🫧 마음 방울 — 응원 단어를 담고 떠오르는 방울
+   ========================================================== */
+(function bubblePlay() {
+  const cv = $("#bubbleCv"), ctx = cv.getContext("2d");
+  const WORDS = ["잘하고 있어", "괜찮아", CONFIG.childName + " 최고", "사랑해", "반짝반짝", "천천히 해", "멋지다!", "숨 한 번~", "포근포근", "네 편이야"];
+  let bubbles = [], raf = null;
+
+  function spawn(w, h, initial) {
+    const r = 34 + Math.random() * 26;
+    bubbles.push({
+      x: r + Math.random() * (w - r * 2),
+      y: initial ? Math.random() * h : h + r + Math.random() * h * 0.3,
+      r, vy: 0.25 + Math.random() * 0.4, wob: Math.random() * Math.PI * 2,
+      hue: Math.floor(Math.random() * 360), word: WORDS[Math.floor(Math.random() * WORDS.length)],
+    });
+  }
+
+  function loop() {
+    const { w, h, dpr } = fitCanvas(cv);
+    ctx.save(); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+    while (bubbles.length < 7) spawn(w, h);
+    for (const b of bubbles) {
+      b.y -= b.vy; b.wob += 0.02;
+      const x = b.x + Math.sin(b.wob) * 10;
+      if (b.y < -b.r) { b.y = h + b.r; b.x = b.r + Math.random() * (w - b.r * 2); }
+      const g = ctx.createRadialGradient(x - b.r * 0.35, b.y - b.r * 0.35, b.r * 0.1, x, b.y, b.r);
+      g.addColorStop(0, `hsla(${b.hue}, 90%, 88%, .95)`);
+      g.addColorStop(0.75, `hsla(${b.hue}, 85%, 70%, .45)`);
+      g.addColorStop(1, `hsla(${b.hue}, 85%, 65%, .15)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `hsla(${b.hue}, 90%, 85%, .6)`; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.95)";
+      ctx.font = `600 ${Math.max(12, b.r * 0.34)}px sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(b.word, x, b.y);
+      b.drawX = x;
+    }
+    ctx.restore();
+    raf = requestAnimationFrame(loop);
+  }
+
+  cv.addEventListener("pointerdown", (e) => {
+    const r = cv.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const b = bubbles[i];
+      if (Math.hypot((b.drawX ?? b.x) - px, b.y - py) < b.r + 8) {
+        bubbles.splice(i, 1);
+        sparkBurst(e.clientX, e.clientY, 7);
+        softNote();
+        break;
+      }
+    }
+  });
+
+  enterHooks.bubbles = () => {
+    bubbles = [];
+    const { w, h } = fitCanvas(cv);
+    for (let i = 0; i < 7; i++) spawn(w, h, true);
+    raf = requestAnimationFrame(loop);
+  };
+  leaveHooks.bubbles = () => cancelAnimationFrame(raf);
+})();
+
+/* ==========================================================
+   🌬️ 숨결 별 — 4·2·6 호흡, 한 바퀴마다 별이 피어남
+   ========================================================== */
+(function breathPlay() {
+  const circle = $("#breathCircle"), text = $("#breathText"), starsEl = $("#breathStars"), btn = $("#breathBtn");
+  let running = false, timer = null;
+  const PHASES = [
+    { label: "들이쉬어요 ...", dur: 4000, scale: 1.35, note: 523 },
+    { label: "잠깐 멈춰요", dur: 2000, scale: 1.35, note: 0 },
+    { label: "천천히 내쉬어요 ~~~", dur: 6000, scale: 0.75, note: 392 },
+  ];
+
+  function runPhase(i) {
+    if (!running) return;
+    const p = PHASES[i];
+    text.textContent = p.label;
+    circle.style.transition = `transform ${p.dur}ms ease-in-out`;
+    circle.style.transform = `scale(${p.scale})`;
+    if (p.note) chime(p.note, p.dur / 1000, "sine", 0.06);
+    timer = setTimeout(() => {
+      if (i === PHASES.length - 1) {
+        const star = document.createElement("span");
+        star.textContent = ["🌟", "💛", "🌸", "💜", "🩵"][starsEl.children.length % 5];
+        starsEl.appendChild(star);
+        if (starsEl.children.length >= 8) { finish(); return; }
+      }
+      runPhase((i + 1) % PHASES.length);
+    }, p.dur);
+  }
+  function finish() {
+    running = false;
+    text.textContent = "우와, 마음이 잔잔해졌어요 🌊";
+    btn.textContent = "다시 하기";
+    chime(659, 0.8); setTimeout(() => chime(880, 1.2), 250);
+  }
+  btn.addEventListener("click", () => {
+    if (running) { stop(); return; }
+    running = true; starsEl.innerHTML = ""; btn.textContent = "그만하기";
+    runPhase(0);
+  });
+  function stop() {
+    running = false; clearTimeout(timer);
+    btn.textContent = "시작하기";
+    text.textContent = "준비되면 시작을 눌러요";
+    circle.style.transition = "transform 1.5s ease"; circle.style.transform = "scale(.75)";
+  }
+  leaveHooks.breath = stop;
+})();
+
+/* ==========================================================
+   🌷 지유의 정원 — 심은 꽃이 영원히 남는 꽃밭
+   ========================================================== */
+(function gardenPlay() {
+  const stage = $("#gardenStage"), hint = $("#gardenHint"), butterfly = $("#butterfly");
+  const FLOWERS = ["🌷", "🌸", "🌼", "🌻", "🪻", "🌺", "🌹", "💐", "🍀", "🌵"];
+  let flowers = store.get("garden", []);
+  let bRaf = null, bt = 0;
+
+  if (!store.get("gardenStart", null)) store.set("gardenStart", Date.now());
+
+  function dayCount() {
+    return Math.floor((Date.now() - store.get("gardenStart", Date.now())) / 86400000) + 1;
+  }
+  function updateHint() {
+    hint.textContent = flowers.length === 0
+      ? "땅을 톡 눌러서 첫 꽃을 심어 보세요 🌱"
+      : `${CONFIG.childName}의 정원 ${dayCount()}일째 · 꽃 ${flowers.length}송이`;
+  }
+  function render() {
+    stage.querySelectorAll(".flower").forEach((f) => f.remove());
+    for (const f of flowers) addFlowerEl(f, false);
+    updateHint();
+  }
+  function addFlowerEl(f, animate) {
+    const el = document.createElement("div");
+    el.className = "flower";
+    el.textContent = f.e;
+    el.style.left = f.x + "%"; el.style.top = f.y + "%";
+    el.style.fontSize = f.s + "px";
+    if (!animate) el.style.animation = "none";
+    stage.appendChild(el);
+  }
+
+  stage.addEventListener("pointerdown", (e) => {
+    const r = stage.getBoundingClientRect();
+    const xPct = ((e.clientX - r.left) / r.width) * 100;
+    const yPct = ((e.clientY - r.top) / r.height) * 100;
+    if (yPct < 30) return; // 하늘에는 심지 않아요
+    const f = { x: xPct, y: yPct, e: FLOWERS[Math.floor(Math.random() * FLOWERS.length)], s: 26 + Math.round(Math.random() * 16) };
+    flowers.push(f);
+    if (flowers.length > 400) flowers = flowers.slice(-400);
+    store.set("garden", flowers);
+    addFlowerEl(f, true);
+    sparkBurst(e.clientX, e.clientY, 5);
+    softNote();
+    updateHint();
+  });
+
+  $("#waterBtn").addEventListener("click", () => {
+    chime(587, 0.5); setTimeout(() => chime(698, 0.6), 150);
+    stage.querySelectorAll(".flower").forEach((el, i) => {
+      setTimeout(() => { el.classList.remove("watered"); void el.offsetWidth; el.classList.add("watered"); }, i * 40);
+    });
+  });
+
+  function flyLoop() {
+    bt += 0.008;
+    const r = stage.getBoundingClientRect();
+    const x = (Math.sin(bt * 1.3) * 0.4 + 0.5) * (r.width - 40);
+    const y = (Math.sin(bt * 0.9 + 1) * 0.25 + 0.35) * r.height;
+    butterfly.style.transform = `translate(${x}px, ${y}px) scaleX(${Math.cos(bt * 1.3) > 0 ? 1 : -1})`;
+    bRaf = requestAnimationFrame(flyLoop);
+  }
+
+  enterHooks.garden = () => { render(); bRaf = requestAnimationFrame(flyLoop); };
+  leaveHooks.garden = () => cancelAnimationFrame(bRaf);
+})();
+
+/* ==========================================================
+   💌 별빛 우체통 — 하루 한 통, 날짜 따라 열리는 편지
+   ========================================================== */
+(function mailPlay() {
+  const card = $("#letterCard");
+  const L = CONFIG.letters;
+  function daysSinceEpoch() { return Math.floor(Date.now() / 86400000); }
+  // 설치한 날 = 첫 편지. 이후 하루에 한 통씩.
+  if (store.get("mailStart", null) === null) store.set("mailStart", daysSinceEpoch());
+  function unlockedCount() {
+    return Math.min(L.length, daysSinceEpoch() - store.get("mailStart", daysSinceEpoch()) + 1);
+  }
+  let idx = 0;
+  function show(i) {
+    const n = unlockedCount();
+    idx = Math.max(0, Math.min(i, n - 1));
+    const letter = L[idx];
+    card.innerHTML = `
+      <div class="stamp">💌</div>
+      <h3>${letter.title} <span style="font-size:12px;color:#b8a0c8">(${idx + 1} / ${L.length})</span></h3>
+      <p></p>
+      <div class="from">— ${CONFIG.sender}</div>`;
+    card.querySelector("p").textContent = letter.body;
+    card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";
+    $("#prevLetter").style.visibility = idx > 0 ? "visible" : "hidden";
+    const next = $("#nextLetter");
+    if (idx < n - 1) { next.textContent = "다음 편지 →"; next.style.opacity = 1; }
+    else if (idx < L.length - 1) { next.textContent = "🔒 내일 도착해요"; next.style.opacity = 0.6; }
+    else { next.textContent = "🌈 끝까지 다 읽었어요"; next.style.opacity = 0.6; }
+  }
+  $("#prevLetter").addEventListener("click", () => { softNote(); show(idx - 1); });
+  $("#nextLetter").addEventListener("click", () => { softNote(); show(idx + 1); });
+  enterHooks.mail = () => show(unlockedCount() - 1);
+})();
+
+/* ---------- 오프라인(PWA) 등록 ---------- */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

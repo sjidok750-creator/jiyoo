@@ -1,0 +1,15 @@
+{
+  "name": "지유의 별빛 정원",
+  "short_name": "지유의 정원",
+  "description": "세상에 딱 하나, 홍지유만을 위한 앱",
+  "lang": "ko",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#160f33",
+  "theme_color": "#160f33",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
