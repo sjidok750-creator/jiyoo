@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d1b69"/>
+      <stop offset="1" stop-color="#0d0a26"/>
+    </linearGradient>
+    <radialGradient id="star" cx="0.4" cy="0.35" r="0.9">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="0.6" stop-color="#ffb3e0"/>
+      <stop offset="1" stop-color="#c9b8ff"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <circle cx="120" cy="110" r="5" fill="#fff" opacity="0.8"/>
+  <circle cx="400" cy="90" r="4" fill="#fff" opacity="0.6"/>
+  <circle cx="430" cy="180" r="6" fill="#ffd6f2" opacity="0.8"/>
+  <circle cx="80" cy="220" r="4" fill="#a8f0e8" opacity="0.7"/>
+  <circle cx="370" cy="420" r="5" fill="#fff" opacity="0.5"/>
+  <path d="M256 96l38 84 92 12-68 64 17 91-79-44-79 44 17-91-68-64 92-12z" fill="url(#star)"/>
+  <g transform="translate(256 400)">
+    <path d="M0-44C14-30 14-8 0 6-14-8-14-30 0-44z" fill="#ff8fc7"/>
+    <path d="M0-44C14-30 14-8 0 6-14-8-14-30 0-44z" fill="#ffb3e0" transform="rotate(72)"/>
+    <path d="M0-44C14-30 14-8 0 6-14-8-14-30 0-44z" fill="#ff8fc7" transform="rotate(144)"/>
+    <path d="M0-44C14-30 14-8 0 6-14-8-14-30 0-44z" fill="#ffb3e0" transform="rotate(216)"/>
+    <path d="M0-44C14-30 14-8 0 6-14-8-14-30 0-44z" fill="#ff8fc7" transform="rotate(288)"/>
+    <circle r="14" fill="#ffe9a8"/>
+  </g>
+</svg>
